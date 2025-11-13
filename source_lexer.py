@@ -5,16 +5,6 @@ class LexerToken:
     """
     The lexer produces these tokens. They have additional information the parser needs for processing.
     """
-    
-    token: input_tokens.InputToken
-    digit: bool
-    whitespace: bool
-    plus: bool
-    minus: bool
-    multiply: bool
-    divide: bool
-    percent: bool
-    equals: bool
 
     def __init__(self, token: input_tokens.InputToken) -> None:
         self.token = token

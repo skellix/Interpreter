@@ -28,8 +28,6 @@ class ExecNode:
 
 
 class Expresion(ExecNode):
-    value: 'AdditionOrSubtraction'
-
     def __init__(self, value: 'AdditionOrSubtraction') -> None:
         super().__init__()
         self.value = value
@@ -42,9 +40,6 @@ class Expresion(ExecNode):
 
 
 class AdditionOrSubtractionPart:
-    operator: source_lexer.LexerToken
-    right: 'MultiplicationOrDivision'
-
     def __init__(self, operator: source_lexer.LexerToken, right: 'MultiplicationOrDivision') -> None:
         super().__init__()
         self.operator = operator
@@ -70,9 +65,6 @@ class AdditionOrSubtractionPart:
 
 
 class AdditionOrSubtraction(ExecNode):
-    start: 'MultiplicationOrDivision'
-    rest: list[AdditionOrSubtractionPart]
-
     def __init__(self, start: 'MultiplicationOrDivision', rest: list[AdditionOrSubtractionPart]) -> None:
         super().__init__()
         self.start = start
@@ -88,9 +80,6 @@ class AdditionOrSubtraction(ExecNode):
 
 
 class MultiplicationOrDivisionPart:
-    operator: source_lexer.LexerToken
-    right: 'Numeric'
-
     def __init__(self, operator: source_lexer.LexerToken, right: 'Numeric') -> None:
         super().__init__()
         self.operator = operator
@@ -118,9 +107,6 @@ class MultiplicationOrDivisionPart:
 
 
 class MultiplicationOrDivision(ExecNode):
-    start: 'Numeric'
-    rest: list[MultiplicationOrDivisionPart]
-
     def __init__(self, start: 'Numeric', rest: list[MultiplicationOrDivisionPart]) -> None:
         super().__init__()
         self.start = start
@@ -136,8 +122,6 @@ class MultiplicationOrDivision(ExecNode):
 
 
 class Numeric(ExecNode):
-    number_or_paren_group: Union['Number', 'ParenGroup']
-
     def __init__(self, number_or_paren_group: Union['Number', 'ParenGroup']) -> None:
         super().__init__()
         self.number_or_paren_group = number_or_paren_group
@@ -150,8 +134,6 @@ class Numeric(ExecNode):
 
 
 class Number(ExecNode):
-    integer_or_float: Union['Integer', 'Float']
-
     def __init__(self, integer_or_float: Union['Integer', 'Float']) -> None:
         super().__init__()
         self.integer_or_float = integer_or_float
@@ -164,8 +146,6 @@ class Number(ExecNode):
 
 
 class Integer(ExecNode):
-    value: int
-
     def __init__(self, value: int) -> None:
         super().__init__()
         self.value = value
@@ -178,8 +158,6 @@ class Integer(ExecNode):
 
 
 class Float(ExecNode):
-    value: float
-
     def __init__(self, value: float) -> None:
         super().__init__()
         self.value = value
@@ -192,8 +170,6 @@ class Float(ExecNode):
 
 
 class ParenGroup(ExecNode):
-    content: AdditionOrSubtraction
-
     def __init__(self, content: AdditionOrSubtraction) -> None:
         super().__init__()
         self.content = content

@@ -16,6 +16,7 @@ Float -> Digit+ '.' Digit+
 ParenGroup -> '(' AdditionOrSubtraction ')'
 """
 
+
 class ParseResultType(Enum):
     UNPARSED = 0
     PARSING = 1
@@ -30,11 +31,6 @@ class ParseResult(Generic[T]):
     """
     Result of a parse step
     """
-    
-    start: 'ParseState'
-    type: ParseResultType = ParseResultType.UNPARSED
-    value: T
-    next: 'ParseState'
 
     def __init__(self, start: 'ParseState', type: ParseResultType, value: T, next: 'ParseState') -> None:
         super().__init__()
@@ -45,10 +41,6 @@ class ParseResult(Generic[T]):
 
 
 class ParseIssue:
-    start: 'ParseState'
-    issue: Exception
-    next: Optional['ParseState']
-
     def __init__(self, start: 'ParseState', issue: Exception, next: Optional['ParseState'] = None) -> None:
         super().__init__()
         self.start = start
@@ -60,20 +52,15 @@ class ParseIssue:
 
 
 class ParseIssues:
-    issues: list[ParseIssue] = []
-
     def __init__(self) -> None:
         super().__init__()
+        self.issues: list[ParseIssue] = []
 
     def add_issue(self, start: 'ParseState', issue: Exception, next: Optional['ParseState'] = None):
         self.issues.append(ParseIssue(start, issue, next))
 
 
 class ParseState:
-    lexer_tokens: list[source_lexer.LexerToken]
-    index: int
-    issues: ParseIssues
-
     def __init__(self, lexer_tokens: list[source_lexer.LexerToken], index: int = 0, issues: ParseIssues = ParseIssues()) -> None:
         self.lexer_tokens = lexer_tokens
         self.index = index
@@ -141,7 +128,8 @@ class ParseState:
         if len(self.issues.issues) == 0:
             return []
 
-        issue_index = sorted((issue.start.index for issue in self.issues.issues), reverse = True)[0]
+        issue_index = sorted(
+            (issue.start.index for issue in self.issues.issues), reverse=True)[0]
         return [issue for issue in self.issues.issues if issue.start.index == issue_index]
 
 
@@ -240,6 +228,7 @@ def debug_wrapper(func: Callable[[ParseState], ParseResult[None] | ParseResult[T
 
     return wrapper
 
+
 @debug_wrapper
 def parse_expresion(state: ParseState):
     """
@@ -317,6 +306,7 @@ def parse_addition_or_subtraction_part(state: ParseState):
 
     return ParseResult(state, ParseResultType.SUCCESS, parser_node.AdditionOrSubtractionPart(operator_part.value, right_part.value), right_part.next)
 
+
 @debug_wrapper
 def parse_addition_or_subtraction(state: ParseState) -> ParseResult[None] | ParseResult[parser_node.AdditionOrSubtraction]:
     """
@@ -378,6 +368,7 @@ def parse_multiplication_or_division_part(state: ParseState):
 
     return ParseResult(state, ParseResultType.SUCCESS, parser_node.MultiplicationOrDivisionPart(operator_part.value, right_part.value), right_part.next)
 
+
 @debug_wrapper
 def parse_multiplication_or_division(state: ParseState) -> ParseResult[None] | ParseResult[parser_node.MultiplicationOrDivision]:
     """
@@ -403,6 +394,7 @@ def parse_multiplication_or_division(state: ParseState) -> ParseResult[None] | P
 
     return ParseResult(state, ParseResultType.SUCCESS, parser_node.MultiplicationOrDivision(start_part.value, rest), rest_part.next)
 
+
 @debug_wrapper
 def parse_numeric(state: ParseState):
     """
@@ -421,6 +413,7 @@ def parse_numeric(state: ParseState):
             return ParseResult(state, ParseResultType.SUCCESS, parser_node.Numeric(paren_group_part.value), paren_group_part.next)
     else:
         return ParseResult(state, ParseResultType.SUCCESS, parser_node.Numeric(number_part.value), number_part.next)
+
 
 @debug_wrapper
 def parse_number(state: ParseState):
@@ -443,6 +436,7 @@ def parse_number(state: ParseState):
             return ParseResult(state, ParseResultType.SUCCESS, parser_node.Number(integer_part.value), integer_part.next)
     else:
         return ParseResult(state, ParseResultType.SUCCESS, parser_node.Number(float_part.value), float_part.next)
+
 
 @debug_wrapper
 def parse_integer(state: ParseState):
@@ -515,6 +509,7 @@ def parse_float(state: ParseState):
     value = float(''.join([part.token.c for part in integer_values]) +
                   '.' + ''.join([part.token.c for part in remainder_values]))
     return ParseResult(state, ParseResultType.SUCCESS, parser_node.Float(value), remainder_parts.next)
+
 
 @debug_wrapper
 def parse_paren_group(state: ParseState):
