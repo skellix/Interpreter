@@ -1,9 +1,9 @@
 from typing import TypeVar, Generic, Callable, Optional
 from enum import Enum
 
-import input_tokens
-import source_lexer
-import parser_node
+import basic_interpreter.input_tokens as input_tokens
+import basic_interpreter.source_lexer as source_lexer
+import basic_interpreter.parser_node as parser_node
 
 """
 Expresion -> '=' AdditionOrSubtraction $

@@ -1,9 +1,8 @@
 from io import SEEK_SET, SEEK_END
 
-import input_tokens
-import source_lexer
-import source_parser
-
+import basic_interpreter.input_tokens as input_tokens
+import basic_interpreter.source_lexer as source_lexer
+import basic_interpreter.source_parser as source_parser
 
 def read_source(source_name: str) -> str:
     with open(source_name) as file:
@@ -11,8 +10,7 @@ def read_source(source_name: str) -> str:
         file.seek(0, SEEK_SET)
         return file.read(file_end + 1)
 
-
-def main():
+def test():
     # print("Reading source")
     source_name = "src.src"
     source = read_source(source_name)
@@ -41,7 +39,3 @@ def main():
     run_result = parser_result.value.exec()
 
     print(f"result: {run_result}")
-
-
-if __name__ == "__main__":
-    main()

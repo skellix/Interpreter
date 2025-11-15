@@ -1,4 +1,4 @@
-import input_tokens
+import basic_interpreter.input_tokens as input_tokens
 
 
 class LexerToken:

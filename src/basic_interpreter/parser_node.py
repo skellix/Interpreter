@@ -2,7 +2,7 @@ from typing import Optional, Union
 from functools import reduce
 
 # import input_tokens
-import source_lexer
+import basic_interpreter.source_lexer as source_lexer
 
 """
 Expresion -> '=' AdditionOrSubtraction $
