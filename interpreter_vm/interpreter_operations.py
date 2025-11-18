@@ -108,6 +108,52 @@ class Modulus(Operation):
         return f"Modulus"
 
 
+class LeftShift(Operation):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def eval(self, state: State) -> None:
+        right_value = state.pop_result()
+
+        if not isinstance(right_value, int):
+            raise Exception(
+                "Expected right operand of LeftShift to be an Integer")
+
+        left_value = state.pop_result()
+
+        if not isinstance(left_value, int):
+            raise Exception(
+                "Expected left operand of LeftShift to be an Integer")
+
+        state.push_result(left_value << right_value)
+
+    def __str__(self) -> str:
+        return f"LeftShift"
+
+
+class RightShift(Operation):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def eval(self, state: State) -> None:
+        right_value = state.pop_result()
+
+        if not isinstance(right_value, int):
+            raise Exception(
+                "Expected right operand of RightShift to be an Integer")
+
+        left_value = state.pop_result()
+
+        if not isinstance(left_value, int):
+            raise Exception(
+                "Expected left operand of RightShift to be an Integer")
+
+        state.push_result(left_value >> right_value)
+
+    def __str__(self) -> str:
+        return f"RightShift"
+
+
 class Integer(Operation):
     def __init__(self, value: int) -> None:
         super().__init__()
@@ -139,7 +185,7 @@ class Return(Operation):
     def eval(self, state: State) -> None:
         if state.callStack is None:
             raise Exception("The code is not running")
-        
+
         # result = state.callStack.resultStack.pop()
         state.callStack = state.callStack.next
 

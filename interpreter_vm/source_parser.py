@@ -6,7 +6,8 @@ import basic_interpreter.source_lexer as source_lexer
 import interpreter_vm.parser_node as parser_node
 
 """
-Expresion -> '=' AdditionOrSubtraction $
+Expresion -> '=' BitwiseShift $
+BitwiseShift -> AdditionOrSubtraction (('<' '<' | '>' '>') AdditionOrSubtraction)*
 AdditionOrSubtraction -> MultiplicationOrDivision (('+' | '-') MultiplicationOrDivision)*
 MultiplicationOrDivision -> Exponentiation (('*' | '/' | '%') Exponentiation)*
 Exponentiation -> Numeric ('**' Numeric)*
@@ -14,7 +15,7 @@ Numeric -> Number | ParenGroup
 Number -> Float | Integer
 Integer -> Digit+
 Float -> Digit+ '.' Digit+
-ParenGroup -> '(' AdditionOrSubtraction ')'
+ParenGroup -> '(' BitwiseShift ')'
 """
 
 
@@ -233,7 +234,7 @@ def debug_wrapper(func: Callable[[ParseState], ParseResult[None] | ParseResult[T
 @debug_wrapper
 def parse_expresion(state: ParseState):
     """
-    Expresion -> \\s* '=' \\s* AdditionOrSubtraction $
+    Expresion -> \\s* '=' \\s* BitwiseShift $
     """
     leading_whitespace_part = get_zero_or_more(
         state, lambda x: x.get_whitespace())
@@ -257,12 +258,12 @@ def parse_expresion(state: ParseState):
     if whitespace_part.type == ParseResultType.FAILURE:
         return ParseResult(state, ParseResultType.FAILURE, None, state)
 
-    value_part = parse_addition_or_subtraction(whitespace_part.next)
+    value_part = parse_bitwise_shift(whitespace_part.next)
 
     # did it match?
     if value_part.type == ParseResultType.FAILURE or value_part.value is None:
         whitespace_part.next.raise_issue(
-            Exception("Expected addition or subtraction"), state)
+            Exception("Expected bitwise shift"), state)
         return ParseResult(state, ParseResultType.FAILURE, None, state)
 
     if value_part.next.is_end():
@@ -271,6 +272,76 @@ def parse_expresion(state: ParseState):
         value_part.next.raise_issue(Exception("Expected end of file"), state)
         return ParseResult(state, ParseResultType.FAILURE, None, state)
         # raise Exception("Expected end of file!")
+
+
+@debug_wrapper
+def parse_bitwise_shift_part(state: ParseState):
+    leading_whitespace_part = get_zero_or_more(
+        state, lambda x: x.get_whitespace())
+
+    # did it match?
+    if leading_whitespace_part.type == ParseResultType.FAILURE:
+        return ParseResult(state, ParseResultType.FAILURE, None, state)
+
+    operator_part = leading_whitespace_part.next.get_one_of_chars(['<', '>'])
+
+    # did it match?
+    if operator_part.type == ParseResultType.FAILURE:
+        leading_whitespace_part.next.raise_issue(
+            Exception("Expected '<' or >'"), state)
+        return ParseResult(state, ParseResultType.FAILURE, None, state)
+
+    operator_part2 = operator_part.next.get_char(operator_part.value.token.c)
+
+    # did it match?
+    if operator_part2.type == ParseResultType.FAILURE:
+        operator_part.next.raise_issue(
+            Exception(f"Expected '{operator_part.value.token.c}'"), state)
+        return ParseResult(state, ParseResultType.FAILURE, None, state)
+
+    whitespace_part = get_zero_or_more(
+        operator_part2.next, lambda x: x.get_whitespace())
+
+    # did it match?
+    if whitespace_part.type == ParseResultType.FAILURE:
+        return ParseResult(state, ParseResultType.FAILURE, None, state)
+
+    right_part = parse_addition_or_subtraction(whitespace_part.next)
+
+    # did it match?
+    if right_part.type == ParseResultType.FAILURE or right_part.value is None:
+        whitespace_part.next.raise_issue(
+            Exception("Expected addition or subtraction"), state)
+        return ParseResult(state, ParseResultType.FAILURE, None, state)
+
+    return ParseResult(state, ParseResultType.SUCCESS, parser_node.BitwiseShiftPart(operator_part.value, right_part.value), right_part.next)
+
+
+@debug_wrapper
+def parse_bitwise_shift(state: ParseState) -> ParseResult[None] | ParseResult[parser_node.BitwiseShift]:
+    """
+    BitwiseShift -> AdditionOrSubtraction (\\s* ('<' '<' | '>' '>') \\s* AdditionOrSubtraction)*
+    """
+    start_part = parse_addition_or_subtraction(state)
+
+    if start_part.type == ParseResultType.FAILURE or start_part.value is None:
+        state.raise_issue(
+            Exception("Expected addition or subtraction"), state)
+        return ParseResult(state, ParseResultType.FAILURE, None, state)
+
+    rest_part = get_zero_or_more(
+        start_part.next, parse_bitwise_shift_part)
+
+    if rest_part.type == ParseResultType.FAILURE:
+        return ParseResult(state, ParseResultType.FAILURE, None, state)
+
+    rest: list[parser_node.BitwiseShiftPart] = []
+
+    for part in rest_part.value:
+        if part.value is not None:
+            rest.append(part.value)
+
+    return ParseResult(state, ParseResultType.SUCCESS, parser_node.BitwiseShift(start_part.value, rest), rest_part.next)
 
 
 @debug_wrapper
@@ -364,7 +435,8 @@ def parse_multiplication_or_division_part(state: ParseState):
 
     # did it match?
     if right_part.type == ParseResultType.FAILURE or right_part.value is None:
-        whitespace_part.next.raise_issue(Exception("Expected exponentiation"), state)
+        whitespace_part.next.raise_issue(
+            Exception("Expected exponentiation"), state)
         return ParseResult(state, ParseResultType.FAILURE, None, state)
 
     return ParseResult(state, ParseResultType.SUCCESS, parser_node.MultiplicationOrDivisionPart(operator_part.value, right_part.value), right_part.next)
@@ -581,7 +653,7 @@ def parse_float(state: ParseState):
 @debug_wrapper
 def parse_paren_group(state: ParseState):
     """
-    ParenGroup -> '(' \\s* AdditionOrSubtraction \\s* ')'
+    ParenGroup -> '(' \\s* BitwiseShift \\s* ')'
     """
     open_paren_part = state.get_char('(')
 
@@ -597,12 +669,12 @@ def parse_paren_group(state: ParseState):
     if leading_whitespace_part.type == ParseResultType.FAILURE:
         return ParseResult(state, ParseResultType.FAILURE, None, state)
 
-    content = parse_addition_or_subtraction(leading_whitespace_part.next)
+    content = parse_bitwise_shift(leading_whitespace_part.next)
 
     # did it match?
     if content.type == ParseResultType.FAILURE or content.value is None:
         leading_whitespace_part.next.raise_issue(
-            Exception("Expected addition or subtraction"), state)
+            Exception("Expected bitwise shift"), state)
         return ParseResult(state, ParseResultType.FAILURE, None, state)
 
     trailing_whitespace_part = get_zero_or_more(

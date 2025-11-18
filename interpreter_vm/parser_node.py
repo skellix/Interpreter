@@ -5,7 +5,8 @@ from stack_executer.stack_executer import *
 import interpreter_vm.interpreter_operations as interpreter_operations
 
 """
-Expresion -> '=' AdditionOrSubtraction $
+Expresion -> '=' BitwiseShift $
+BitwiseShift -> AdditionOrSubtraction (('<' '<' | '>' '>') AdditionOrSubtraction)*
 AdditionOrSubtraction -> MultiplicationOrDivision (('+' | '-') MultiplicationOrDivision)*
 MultiplicationOrDivision -> Exponentiation (('*' | '/' | '%') Exponentiation)*
 Exponentiation -> Numeric ('**' Numeric)*
@@ -13,7 +14,7 @@ Numeric -> Number | ParenGroup
 Number -> Float | Integer
 Integer -> Digit+
 Float -> Digit+ '.' Digit+
-ParenGroup -> '(' AdditionOrSubtraction ')'
+ParenGroup -> '(' BitwiseShift ')'
 """
 
 
@@ -29,7 +30,7 @@ class ExecNode:
 
 
 class Expresion(ExecNode):
-    def __init__(self, value: 'AdditionOrSubtraction') -> None:
+    def __init__(self, value: 'BitwiseShift') -> None:
         super().__init__()
         self.value = value
 
@@ -39,6 +40,42 @@ class Expresion(ExecNode):
 
     def __str__(self) -> str:
         return f"Expresion({self.value})"
+
+
+class BitwiseShiftPart:
+    def __init__(self, operator: source_lexer.LexerToken, right: 'AdditionOrSubtraction') -> None:
+        super().__init__()
+        self.operator = operator
+        self.right = right
+
+    def generate_opcodes(self, output: list[Operation]):
+        self.right.generate_opcodes(output)
+
+        if self.operator.left_angle_bracket:
+            output.append(interpreter_operations.LeftShift())
+        elif self.operator.right_angle_bracket:
+            output.append(interpreter_operations.RightShift())
+        else:
+            raise Exception("Unknown operator encountered in BitwiseShiftPart")
+
+    def __str__(self) -> str:
+        return f"{self.operator}({self.right})"
+
+
+class BitwiseShift(ExecNode):
+    def __init__(self, start: 'AdditionOrSubtraction', rest: list[BitwiseShiftPart]) -> None:
+        super().__init__()
+        self.start = start
+        self.rest = rest
+
+    def generate_opcodes(self, output: list[Operation]):
+        self.start.generate_opcodes(output)
+
+        for part in self.rest:
+            part.generate_opcodes(output)
+
+    def __str__(self) -> str:
+        return f"BitwiseShift({self.start}{',' if len(self.rest) > 0 else ''}{','.join([str(part) for part in self.rest])})"
 
 
 class AdditionOrSubtractionPart:
@@ -55,7 +92,8 @@ class AdditionOrSubtractionPart:
         elif self.operator.minus:
             output.append(interpreter_operations.Subtract())
         else:
-            raise Exception("Unknown operator encountered in AdditionOrSubtractionPart")
+            raise Exception(
+                "Unknown operator encountered in AdditionOrSubtractionPart")
 
     def __str__(self) -> str:
         return f"{self.operator}({self.right})"
@@ -93,7 +131,8 @@ class MultiplicationOrDivisionPart:
         elif self.operator.percent:
             output.append(interpreter_operations.Modulus())
         else:
-            raise Exception("Unknown operator encountered in MultiplicationOrDivisionPart")
+            raise Exception(
+                "Unknown operator encountered in MultiplicationOrDivisionPart")
 
     def __str__(self) -> str:
         return f"{self.operator}({self.right})"
@@ -132,7 +171,8 @@ class ExponentiationPart:
         elif self.operator.percent:
             output.append(interpreter_operations.Modulus())
         else:
-            raise Exception("Unknown operator encountered in ExponentiationPart")
+            raise Exception(
+                "Unknown operator encountered in ExponentiationPart")
 
     def __str__(self) -> str:
         return f"{self.operator}({self.right})"
@@ -151,26 +191,25 @@ class Exponentiation(ExecNode):
 
         for part in reversed_rest:
             part.generate_opcodes(output)
-    
+
     def get_reversed_order(self) -> tuple['Numeric', list[ExponentiationPart]]:
         if len(self.rest) == 0:
             return (self.start, [])
-        
+
         start: Numeric = self.rest[-1].right
         rest: list[ExponentiationPart] = []
         previous_operator: source_lexer.LexerToken = self.rest[-1].operator
-        
+
         for i, item in enumerate(self.rest):
             if i == 0:
                 start = item.right
                 previous_operator = item.operator
             else:
                 rest.append(ExponentiationPart(previous_operator, item.right))
-        
+
         rest.append(ExponentiationPart(previous_operator, self.start))
 
         return (start, rest)
-
 
     def __str__(self) -> str:
         return f"Exponentiation({self.start}{',' if len(self.rest) > 0 else ''}{','.join([str(part) for part in self.rest])})"
@@ -225,7 +264,7 @@ class Float(ExecNode):
 
 
 class ParenGroup(ExecNode):
-    def __init__(self, content: AdditionOrSubtraction) -> None:
+    def __init__(self, content: BitwiseShift) -> None:
         super().__init__()
         self.content = content
 
@@ -234,6 +273,7 @@ class ParenGroup(ExecNode):
 
     def __str__(self) -> str:
         return f"({self.content})"
+
 
 def compile_node(node: ExecNode):
     output: list[Operation] = []

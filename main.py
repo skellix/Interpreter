@@ -17,7 +17,7 @@ def read_source(source_name: str) -> str:
 
 def main():
     # print("Reading source")
-    source_name = "src.src"
+    source_name = "src2.src"
     source = read_source(source_name)
 
     tokens = input_tokens.tokenize(source)

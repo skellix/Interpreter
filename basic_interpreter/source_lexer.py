@@ -17,6 +17,8 @@ class LexerToken:
         self.divide = token.c == '/'
         self.percent = token.c == '%'
         self.equals = token.c == '='
+        self.left_angle_bracket = token.c == '<'
+        self.right_angle_bracket = token.c == '>'
 
     def __str__(self) -> str:
         return f"token({self.token})"
